@@ -1,11 +1,18 @@
 using GrpahqlHC.Models;
+using GrpahqlHC.Mutations;
+using GrpahqlHC.Queries;
+using GrpahqlHC.Subscriptions;
+using GrpahqlHC.Types;
+using HotChocolate;
+using HotChocolate.AspNetCore;
+using HotChocolate.AspNetCore.Voyager;
+using HotChocolate.Execution.Configuration;
+using HotChocolate.Subscriptions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace GrpahqlHC
 {
@@ -22,32 +29,36 @@ namespace GrpahqlHC
 
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContext<PlanningContext>(options =>
+            services.AddDbContext<PlanningDbContext>(options =>
              options.UseInMemoryDatabase(databaseName: "Planning")
                     .EnableSensitiveDataLogging());
+
+            services.AddGraphQL(SchemaBuilder.New()
+                .AddQueryType<PlanningQueries>()
+                .AddMutationType<PlanningMutations>()
+                .AddSubscriptionType<PlanningSubscription>()
+                .AddType<ProjectType>()
+                .Create(),
+                new QueryExecutionOptions
+                {
+                    ForceSerialExecution = true,
+                    IncludeExceptionDetails = true
+                });
+
+            services.AddInMemorySubscriptionProvider();
         }
 
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, PlanningContext dbContext)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, PlanningDbContext dbContext)
         {
             SeedDatabase(dbContext);
 
-            if (env.IsDevelopment())
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
-            app.UseRouting();
-
-            app.UseEndpoints(endpoints =>
-            {
-                endpoints.MapGet("/", async context =>
-                {
-                    await context.Response.WriteAsync(Configuration["Logging:LogLevel:Microsoft"]);
-                });
-            });
+            app.UseWebSockets();
+            app.UseGraphQL("/graphql");
+            app.UsePlayground("/graphql", "/ui/playground");
+            app.UseVoyager("/graphql", "/ui/voyager");
         }
 
-        private void SeedDatabase(PlanningContext dbContext)
+        private void SeedDatabase(PlanningDbContext dbContext)
         {
             dbContext.Projects.AddRange(new[]
             {

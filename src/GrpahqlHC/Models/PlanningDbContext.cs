@@ -2,9 +2,9 @@
 
 namespace GrpahqlHC.Models
 {
-    public class PlanningContext : DbContext
+    public class PlanningDbContext : DbContext
     {
-        public PlanningContext(DbContextOptions<PlanningContext> options)
+        public PlanningDbContext(DbContextOptions<PlanningDbContext> options)
             : base(options)
         { }
 
