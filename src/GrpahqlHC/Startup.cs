@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StackExchange.Redis;
 
 namespace GrpahqlHC
 {
@@ -45,7 +46,17 @@ namespace GrpahqlHC
                     IncludeExceptionDetails = true
                 });
 
-            services.AddInMemorySubscriptionProvider();
+            //services.AddInMemorySubscriptionProvider();
+
+            var configuration = new ConfigurationOptions
+            {
+                AbortOnConnectFail = false,
+                DefaultDatabase = 2
+            };
+
+            configuration.EndPoints.Add("xxxxxx.com.au:6379");
+
+            services.AddRedisSubscriptions(configuration);
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env, PlanningDbContext dbContext)
